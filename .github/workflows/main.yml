@@ -8,8 +8,8 @@ on:
 
 jobs:
   build:
-    name: Build 
-    runs-on: ubuntu-latest 
+    name: Build
+    runs-on: ubuntu-latest
     env:
       CCACHE_COMPILERCHECK: '%compiler% -dumpmachine; %compiler% -dumpversion'
       CCACHE_NOHASHDIR: 'true'
@@ -27,11 +27,11 @@ jobs:
       if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
       run: |
         if [ ! -z "${{ secrets.KEY_STORE }}" ]; then
-          echo androidStorePassword='${{ secrets.KEY_STORE_PASSWORD }}' >> gradle.properties
-          echo androidKeyAlias='${{ secrets.ALIAS }}' >> gradle.properties
-          echo androidKeyPassword='${{ secrets.KEY_PASSWORD }}' >> gradle.properties
-          echo androidStoreFile='key.jks' >> gradle.properties
-          echo ${{ secrets.KEY_STORE }} | base64 --decode > key.jks
+          echo "androidStorePassword=${{ secrets.KEY_STORE_PASSWORD }}" >> gradle.properties
+          echo "androidKeyAlias=${{ secrets.ALIAS }}" >> gradle.properties
+          echo "androidKeyPassword=${{ secrets.KEY_PASSWORD }}" >> gradle.properties
+          echo "androidStoreFile=key.jks" >> gradle.properties
+          echo "${{ secrets.KEY_STORE }}" | base64 --decode > key.jks
         fi
 
     - name: Checkout libxposed/api
@@ -46,11 +46,11 @@ jobs:
         repository: libxposed/service
         path: libxposed/service
 
-    - name: Setup JDK
-      uses: actions/setup-java@v3
+    - name: Setup Java
+      uses: actions/setup-java@v3.6.0
       with:
+        distribution: 'zulu'
         java-version: '21'
-        distribution: 'temurin' # Example of selecting AdoptOpenJDK distribution
 
     - name: Setup Gradle
       uses: gradle/gradle-build-action@v2
@@ -82,6 +82,7 @@ jobs:
         echo 'org.gradle.jvmargs=-Xmx2048m' >> gradle.properties
         echo 'android.native.buildOutput=verbose' >> gradle.properties
         ./gradlew buildAll
+        continue-on-error: false
 
     - name: Upload Debug artifact
       uses: actions/upload-artifact@v3
@@ -90,6 +91,7 @@ jobs:
         path: out/debug/*
 
     - name: Upload Release artifact
+      if: success()
       uses: actions/upload-artifact@v3
       with:
         name: npatch-release
@@ -109,4 +111,3 @@ jobs:
         path: |
           patch-loader/build/outputs/mapping
           manager/build/outputs/mapping
-
